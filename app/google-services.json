@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "220042029040",
+    "project_id": "ejerciciosemana4-aac58",
+    "storage_bucket": "ejerciciosemana4-aac58.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220042029040:android:2d4f6cc9bf6c9c57eb5f35",
+        "android_client_info": {
+          "package_name": "com.example.ejerciciosemana4"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwlhmyDZt39AQpRHjgRW0TQNDYm3wTbRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
