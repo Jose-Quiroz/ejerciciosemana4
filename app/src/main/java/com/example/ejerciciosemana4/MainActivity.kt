@@ -21,13 +21,23 @@ import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// Modelo de datos para mapear Firestore
+// Modelo de datos flexible para mapear Firestore
 @Keep
 @IgnoreExtraProperties
 data class Post(
     val texto: String = "",
-    val fecha: Timestamp? = null
-)
+    val fecha: Any? = null // Permite recibir tanto Timestamp como String desde Firebase
+) {
+    fun obtenerFechaTexto(): String {
+        return when (val f = fecha) {
+            is Timestamp -> {
+                SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(f.toDate())
+            }
+            is String -> f
+            else -> "Sin fecha"
+        }
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -86,7 +96,7 @@ class MainActivity : ComponentActivity() {
             }
             .addOnFailureListener { e ->
                 cargando = false
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Error de Firestore: ${e.message}", Toast.LENGTH_LONG).show()
             }
     }
 
@@ -142,33 +152,50 @@ fun FeedScreen(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            contentAlignment = Alignment.Center
         ) {
-            items(posts) { post ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            if (posts.isEmpty()) {
+                if (cargando) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = "Cargando publicaciones...", style = MaterialTheme.typography.bodyMedium)
+                    }
+                } else {
+                    Text(
+                        text = "No se encontraron publicaciones en Firestore.\nAsegúrate de haber creado la colección 'posts' en la consola de Firebase.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = post.texto,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
+                    items(posts) { post ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = post.texto,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                        val fechaTexto = post.fecha?.toDate()?.let {
-                            SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(it)
-                        } ?: "Sin fecha"
-
-                        Text(
-                            text = fechaTexto,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                                Text(
+                                    text = post.obtenerFechaTexto(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -178,17 +205,17 @@ fun FeedScreen(
 
         Button(
             onClick = onCargarMasClick,
-            enabled = !cargando && hayMas,
+            enabled = !cargando && hayMas && posts.isNotEmpty(),
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (cargando) {
+            if (cargando && posts.isNotEmpty()) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(if (hayMas) "Cargar más" else "No hay más publicaciones")
+                Text(if (hayMas && posts.isNotEmpty()) "Cargar más" else "No hay más publicaciones")
             }
         }
     }
